@@ -1,4 +1,4 @@
-use serde::{Deserialize};
+use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
 pub struct KalshiRecord {
@@ -9,6 +9,11 @@ pub struct KalshiRecord {
 }
 
 #[derive(Deserialize, Debug)]
-pub struct KalshiDataset {
-    pub records: Vec<KalshiRecord>
+pub struct CoinbaseRecord {
+    ts: u64,
+    price: f64,
+    volume: f64,
+    mu: f64,
+    sigma: f64,
 }
+
