@@ -4,7 +4,7 @@ use std::path::Path;
 use serde_json;
 use regex::Regex;
 
-use super::data_types::KalshiRecord;
+use super::data_types::{KalshiRecord, KalshiDataset};
 
 fn chunk_kalshi_records<'a>(text: &'a String, re: &Regex) -> impl Iterator<Item = &'a str> {
     let chunks = re.find_iter(text).map(|m| m.as_str());
@@ -23,6 +23,10 @@ pub fn read_kalshi<P: AsRef<Path>>(path: P) -> Result<Vec<KalshiRecord>, Box<dyn
     // TODO: remove unwrap to handle deserialization error
     let records: Vec<KalshiRecord> = chunks.map(|s| serde_json::from_str::<KalshiRecord>(s).unwrap()).collect();
     
+    // getting meta data for dataset
+    let expir_ts = (records[0].tte*(3600_f64)) as u64 + records[0].ts;
+    
+
     Ok(records)
 }
 
