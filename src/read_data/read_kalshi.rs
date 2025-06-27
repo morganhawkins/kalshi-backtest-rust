@@ -1,40 +1,30 @@
 use std::error::Error;
-use std::fs::File;
+use std::fs::read_to_string;
 use std::path::Path;
-use std::io::BufReader;
-use serde_json::Value;
+use serde_json;
+use regex::Regex;
 
-use super::data_types::{KalshiRecord, KalshiDataset};
+use super::data_types::KalshiRecord;
 
-pub fn read_kalshi<P: AsRef<Path>>(path: P) -> Result<(), Box<dyn Error + Send + Sync>>{
-
-    // if !fp.ends_with(".json"){
-    //     return Err("file format must be json".into());
-    // }
-
-    let file = File::open(path)?;
-
-    // Create a buffered reader to efficiently read the file's contents
-    let reader = BufReader::new(file);
-
-    // Parse the JSON data from the reader
-    let record: Value = serde_json::from_reader(reader)?;
-
-    match record {
-        Value::Array(arr) => {
-            for record in arr{
-                let kalshi_record = serde_json::from_value::<KalshiRecord>(record);
-                
-            }
-        }, 
-        _ => return Err("not an Array".into())
-    }
-
-
-    Ok(())
+fn chunk_kalshi_records<'a>(text: &'a String, re: &Regex) -> impl Iterator<Item = &'a str> {
+    let chunks = re.find_iter(text).map(|m| m.as_str());
+    chunks
 }
 
+pub fn read_kalshi<P: AsRef<Path>>(path: P) -> Result<Vec<KalshiRecord>, Box<dyn Error>>{
+    // compile regex to chunk array into objects
+    let pattern= r"\{.*?\}";
+    let re = Regex::new(pattern).unwrap(); 
 
+    // read to string and chunk
+    let contents = read_to_string(path)?;
+    let chunks = chunk_kalshi_records(&contents, &re);
+    
+    // TODO: remove unwrap to handle deserialization error
+    let records: Vec<KalshiRecord> = chunks.map(|s| serde_json::from_str::<KalshiRecord>(s).unwrap()).collect();
+    
+    Ok(records)
+}
 
 
 
@@ -45,10 +35,6 @@ mod tests {
     #[test]
     fn test_read_mock() {
 
-
     }
-
-
-
 
 }
