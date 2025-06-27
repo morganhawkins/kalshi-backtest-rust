@@ -4,24 +4,24 @@ use std::path::Path;
 use serde_json;
 use regex::Regex;
 
-use super::data_types::KalshiRecord;
+use super::data_types::CoinbaseRecord;
 
-fn chunk_kalshi_records<'a>(text: &'a String, re: &Regex) -> impl Iterator<Item = &'a str> {
+fn chunk_coinbase_records<'a>(text: &'a String, re: &Regex) -> impl Iterator<Item = &'a str> {
     let chunks = re.find_iter(text).map(|m| m.as_str());
     chunks
 }
 
-pub fn read_kalshi<P: AsRef<Path>>(path: P) -> Result<Vec<KalshiRecord>, Box<dyn Error>>{
+pub fn read_coinbase<P: AsRef<Path>>(path: P) -> Result<Vec<CoinbaseRecord>, Box<dyn Error>>{
     // compile regex to chunk array into objects
     let pattern= r"\{.*?\}";
     let re = Regex::new(pattern).unwrap(); 
 
     // read to string and chunk
     let contents = read_to_string(path)?;
-    let chunks = chunk_kalshi_records(&contents, &re);
+    let chunks = chunk_coinbase_records(&contents, &re);
     
     // TODO: remove unwrap to handle deserialization error
-    let records: Vec<KalshiRecord> = chunks.map(|s| serde_json::from_str::<KalshiRecord>(s).unwrap()).collect();
+    let records: Vec<CoinbaseRecord> = chunks.map(|s| serde_json::from_str::<CoinbaseRecord>(s).unwrap()).collect();
     
     Ok(records)
 }

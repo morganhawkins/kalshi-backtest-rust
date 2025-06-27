@@ -10,10 +10,9 @@ pub struct KalshiRecord {
 
 #[derive(Deserialize, Debug)]
 pub struct CoinbaseRecord {
-    ts: u64,
-    price: f64,
-    volume: f64,
-    mu: f64,
-    sigma: f64,
+    ts: u64, // unix time stamp
+    price: f64, // open price
+    mu: f64, // mean log return _h rolling window
+    sigma: f64, // sigma log return _h rolling window
 }
 
