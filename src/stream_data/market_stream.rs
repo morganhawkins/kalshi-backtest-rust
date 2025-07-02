@@ -8,7 +8,7 @@ use crate::read_data::data_types::{CoinbaseRecord, KalshiDataset, KalshiRecord};
 pub struct PairMarketStream<'a> {
     pub under_data: &'a [CoinbaseRecord],
     pub deriv_data: KalshiDataset,
-    pub timer: DeltaTimer,
+    timer: DeltaTimer,
     pub under_current_index: Option<RefCell<usize>>,
     pub deriv_current_index: Option<RefCell<usize>>,
 }

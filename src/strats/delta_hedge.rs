@@ -52,7 +52,7 @@ impl<'a> DeltaHedge<'a> {
     }
 
     fn cycle(&self) {
-        self.stream.timer.cycle();
+        self.stream.cycle();
     }
 
     fn place_under_order(&self, quantity: f64, cb_record: &CoinbaseRecord) {
@@ -64,7 +64,7 @@ impl<'a> DeltaHedge<'a> {
     }
 
     fn place_deriv_order(&self, quantity: f64, kl_record: &KalshiRecord) {
-        let exec_price = ((kl_record.ask + kl_record.bid) as f64) /200.0;
+        let exec_price = ((kl_record.ask + kl_record.bid) as f64) / 200.0;
         *self.deriv_position.borrow_mut() += quantity;
         *self.cash.borrow_mut() -= quantity * exec_price;
     }
