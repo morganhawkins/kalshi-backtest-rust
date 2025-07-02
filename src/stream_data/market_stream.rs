@@ -6,11 +6,11 @@ use crate::read_data::data_types::{CoinbaseRecord, KalshiDataset, KalshiRecord};
 // Pairing a slice reference of underlying data along with owned derivative data
 // To test hedging of a single contract
 pub struct PairMarketStream<'a> {
-    under_data: &'a [CoinbaseRecord],
-    deriv_data: KalshiDataset,
-    timer: DeltaTimer,
-    under_current_index: Option<RefCell<usize>>,
-    deriv_current_index: Option<RefCell<usize>>,
+    pub under_data: &'a [CoinbaseRecord],
+    pub deriv_data: KalshiDataset,
+    pub timer: DeltaTimer,
+    pub under_current_index: Option<RefCell<usize>>,
+    pub deriv_current_index: Option<RefCell<usize>>,
 }
 
 impl<'a> PairMarketStream<'a> {

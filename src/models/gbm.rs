@@ -7,7 +7,7 @@ pub fn value(u_price: f64, strike: f64, sigma: f64, mu: f64, tte: f64) -> Option
     };
 
     let deviations_to_strike =
-        f64::ln(strike / (u_price * tte * mu)) / (f64::sqrt(2.0 * tte) * sigma);
+        (f64::ln(strike / u_price) - (tte * mu)) / (f64::sqrt(2.0 * tte) * sigma);
     let deriv_price = 0.5 * (1.0 - erf(deviations_to_strike));
 
     // checking that its finite. Must be valid price since must eval in (0,1)
@@ -24,9 +24,8 @@ pub fn iv(price: f64, u_price: f64, strike: f64, mu: f64, tte: f64) -> Option<f6
         return None;
     }
 
-    let numerator = f64::ln(strike / (u_price * tte * mu));
+    let numerator = f64::ln(strike / u_price) - (tte * mu);
     let denominator = f64::sqrt(2.0 * tte) * erf_inv(1.0 - (2.0 * price));
-
     let implied_vol = numerator / denominator;
 
     if implied_vol.is_finite() && (implied_vol >= 0.0) {
@@ -90,5 +89,44 @@ pub fn gamma(u_price: f64, strike: f64, sigma: f64, mu: f64, tte: f64) -> Option
         return Some(gamma_);
     } else {
         return None;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_value() {
+        // test values are on right side of .5
+        assert!(value(10.0, 11.0, 1.0, 0.0, 1.0).unwrap() < 0.5);
+        assert!(value(12.0, 11.0, 1.0, 0.0, 1.0).unwrap() > 0.5);
+    }
+
+    #[test]
+    fn test_iv() {
+        assert!(iv(0.5, 10.0, 10.0, 0.0, 1.0).is_none());
+        assert!(iv(0.7, 10.0, 12.0, 0.0, 1.0).is_none());
+        assert!(iv(0.3, 10.0, 12.0, 0.0, 1.0).unwrap() > 0.0);
+    }
+    #[test]
+    fn test_delta() {
+        assert!(delta(10.0, 15.0, 1.0, 0.0, 1.0).unwrap() > 0.0);
+        assert!(delta(15.0, 10.0, 1.0, 0.2, 1.0).unwrap() > 0.0);
+    }
+    #[test]
+    fn test_vega() {
+        assert!(vega(10.0, 15.0, 0.1, 0.0, 1.0).unwrap() > 0.0);
+        assert!(vega(15.0, 10.0, 0.1, 0.0, 1.0).unwrap() < 0.0);
+    }
+    #[test]
+    fn test_gamma() {
+        assert!(gamma(15.0, 10.0, 1.0, 0.1, 1.0).unwrap() < 0.0);
+        assert!(gamma(1.0, 10.0, 1.0, 0.0, 1.0).unwrap() > 0.0);
+    }
+    #[test]
+    fn test_theta() {
+        assert!(theta(10.0, 15.0, 0.1, 0.0, 1.0).unwrap() < 0.0);
+        assert!(theta(15.0, 10.0, 0.1, 0.0, 1.0).unwrap() > 0.0);
     }
 }
