@@ -137,6 +137,6 @@ mod tests {
         let mock_cb_records = create_mock_cb_records(10, 20);
         let mock_kalshi_ds = create_mock_kalshi_ds(10, 20);
 
-        let stream = PairMarketStream::new(&mock_cb_records[..], mock_kalshi_ds, 1);
+        let _stream = PairMarketStream::new(&mock_cb_records[..], mock_kalshi_ds, 1);
     }
 }

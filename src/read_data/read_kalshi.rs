@@ -57,7 +57,7 @@ pub fn read_kalshi<P: AsRef<Path>>(path: P) -> Result<KalshiDataset, Box<dyn Err
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    // use super::*;
 
     #[test]
     fn test_read_mock() {}

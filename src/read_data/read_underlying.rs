@@ -30,7 +30,7 @@ pub fn read_coinbase<P: AsRef<Path>>(path: P) -> Result<Vec<CoinbaseRecord>, Box
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    // use super::*;
 
     #[test]
     fn test_read_mock() {}
