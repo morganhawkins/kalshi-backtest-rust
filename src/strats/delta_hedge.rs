@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use crate::read_data::data_types::{CoinbaseRecord, KalshiRecord};
 use crate::stream_data::market_stream::PairMarketStream;
 use crate::models::gbm;
-use crate::stream_data::timers::Timer;
+use super::data_types::TestResult;
 
 struct UnderlyingOrder{
     exec_price: f64,
@@ -21,6 +21,7 @@ pub struct DeltaHedge<'a>{
     stream: PairMarketStream<'a>,
     under_terminal: f64,
     strike: f64,
+    init_cash: f64,
     // track positions
     under_orders: RefCell<Vec<UnderlyingOrder>>,
     under_position: RefCell<f64>,
@@ -41,6 +42,7 @@ impl<'a> DeltaHedge<'a> {
             stream: stream,
             under_terminal: under_terminal,
             strike: strike,
+            init_cash: init_cash,
             under_orders: RefCell::new(Vec::new()),
             under_position: RefCell::new(0.0),
             deriv_position: RefCell::new(0.0),
@@ -70,7 +72,6 @@ impl<'a> DeltaHedge<'a> {
     }
 
     fn reconcile_hedge_orders(&self, under_price: f64) {
-        println!("under orders placed: {}", self.under_orders.borrow().len());
         let mut accum = 0.0;
         for order in self.under_orders.borrow().iter(){
            accum += order.quantity * (under_price - order.exec_price);
@@ -131,8 +132,7 @@ impl<'a> DeltaHedge<'a> {
         
     }
 
-    pub fn test(&self) -> f64 {
-        let mut loops = 0;
+    pub fn test(&self) -> TestResult {
         loop {
             // consume data and cycle timer
             self.consume();
@@ -142,7 +142,7 @@ impl<'a> DeltaHedge<'a> {
             if let None = self.stream.get_time(){
                 break
             } else {
-                loops +=1;
+
             }
         }
 
@@ -152,8 +152,15 @@ impl<'a> DeltaHedge<'a> {
         // getting terminla cash and derivative position value
         let end_cash = *self.cash.borrow();
         let end_deriv_val = f64::from(self.under_terminal >= self.strike)*(*self.deriv_position.borrow());
-        println!("loops performed: {loops}");
-        println!("derivs_held: {}", (*self.deriv_position.borrow()));
-        return end_cash + end_deriv_val;
+        let terminal_value =  end_cash + end_deriv_val;
+
+        return TestResult {
+            init_value: self.init_cash,
+            terminal_value: terminal_value,
+            deriv_term_value: end_deriv_val,
+            strike: self.strike,
+            start_ts: self.stream.deriv_data.start_ts,
+            expir_ts: self.stream.deriv_data.expir_ts,   
+        };
     }
 }
