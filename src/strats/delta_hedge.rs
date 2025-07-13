@@ -30,7 +30,7 @@ pub struct DeltaHedge<'a> {
     cash: RefCell<f64>,
     // hyper parameters
     max_under_pos: f64,
-    _min_tte_hedge: f64, // TODO: actually use this parameter as intended
+    min_tte_hedge: f64, 
 }
 
 impl<'a> DeltaHedge<'a> {
@@ -53,7 +53,7 @@ impl<'a> DeltaHedge<'a> {
             deriv_position: RefCell::new(0.0),
             cash: RefCell::new(init_cash),
             max_under_pos: max_under_pos,
-            _min_tte_hedge: min_tte_hedge,
+            min_tte_hedge: min_tte_hedge,
         }
     }
 
@@ -67,6 +67,17 @@ impl<'a> DeltaHedge<'a> {
             quantity: quantity,
         });
         *self.under_position.borrow_mut() += quantity;
+    }
+
+    fn zero_hedge(&self, cb_record: &CoinbaseRecord) {
+        let under_pos = *self.under_position.borrow();
+        if under_pos != 0.0 {
+            self.under_orders.borrow_mut().push(UnderlyingOrder {
+                exec_price: cb_record.price,
+                quantity:  under_pos,
+            });
+            *self.under_position.borrow_mut() = 0.0;
+        }
     }
 
     fn place_deriv_order(&self, quantity: f64, kl_record: &KalshiRecord) {
@@ -105,15 +116,27 @@ impl<'a> DeltaHedge<'a> {
     fn adjust_delta_hedge(&self, exposures: GreekExp, cb_record: &CoinbaseRecord) {
         let deriv_position = *self.deriv_position.borrow();
         let under_position = *self.under_position.borrow();
-        let max_order = self.max_under_pos - under_position;
         let min_order = -self.max_under_pos - under_position;
+        let max_order = self.max_under_pos - under_position;
+        // println!("{under_position:.5} {min_order:.5} {max_order:.5}");
         let delta_err = match exposures.delta {
-            Some(delta_) => (delta_ * deriv_position - under_position).clamp(min_order, max_order),
+            Some(delta_) => {
+                delta_ * deriv_position + under_position
+        },
             None => return,
         };
         if delta_err != 0.0 {
-            self.place_under_order(delta_err, cb_record);
+            self.place_under_order((-delta_err).clamp(min_order, max_order), cb_record);
         }
+    }
+
+    fn validate_data(&self, kl_record: &KalshiRecord) -> bool {
+        if (kl_record.ask - kl_record.bid) > 5 {
+            return false;
+        } else if (kl_record.ask > 95) || (kl_record.bid < 5) {
+            return false
+        }
+        return true
     }
 
     fn consume(&self) {
@@ -134,7 +157,11 @@ impl<'a> DeltaHedge<'a> {
             self.place_deriv_order(1.0, kl_record);
         };
 
-        self.adjust_delta_hedge(exposures, cb_record);
+        if self.validate_data(kl_record) {
+            self.adjust_delta_hedge(exposures, cb_record);
+        } else if (kl_record.tte <= self.min_tte_hedge){
+            self.zero_hedge(cb_record);
+        }
     }
 
     pub fn test(&self) -> TestResult {
