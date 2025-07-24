@@ -159,7 +159,7 @@ impl<'a> DeltaHedge<'a> {
 
         if self.validate_data(kl_record) {
             self.adjust_delta_hedge(exposures, cb_record);
-        } else if (kl_record.tte <= self.min_tte_hedge){
+        } else if kl_record.tte <= self.min_tte_hedge {
             self.zero_hedge(cb_record);
         }
     }
@@ -173,7 +173,6 @@ impl<'a> DeltaHedge<'a> {
             //break if timer is done
             if let None = self.stream.get_time() {
                 break;
-            } else {
             }
         }
 

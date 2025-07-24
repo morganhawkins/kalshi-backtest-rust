@@ -6,7 +6,6 @@ pub trait Timer {
 }
 
 pub struct DeltaTimer {
-    start_ts: u64,
     end_ts: u64,
     current_ts: RefCell<u64>,
     delta: u64,
@@ -16,7 +15,6 @@ impl DeltaTimer {
     // current_ts init to same as start_ts
     pub fn new(start_ts: u64, end_ts: u64, delta: u64) -> Self {
         DeltaTimer {
-            start_ts: start_ts,
             end_ts: end_ts,
             current_ts: RefCell::new(start_ts),
             delta: delta,

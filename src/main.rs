@@ -30,12 +30,12 @@ fn generate_dh_pair_test(
     min_tte_hedge: f64,
     init_cash: f64,
 ) -> impl Fn(PairMarketStream) -> TestResult {
-    let a = move |stream: PairMarketStream| {
+    let test = move |stream: PairMarketStream| {
         let strat = DeltaHedge::new(stream, max_under_pos, min_tte_hedge, init_cash);
         let term_port_val = strat.test();
         return term_port_val;
     };
-    return a;
+    return test;
 }
 
 fn test_pair_streams(test_fn: impl Fn(PairMarketStream) -> TestResult) -> Vec<TestResult> {
