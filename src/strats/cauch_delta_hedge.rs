@@ -1,5 +1,5 @@
 use super::data_types::TestResult;
-use crate::models::gbm;
+use crate::models::cauchy;
 use crate::read_data::data_types::{CoinbaseRecord, KalshiRecord};
 use crate::stream_data::market_stream::PairMarketStream;
 use std::cell::RefCell;
@@ -17,7 +17,7 @@ struct GreekExp {
     theta: Option<f64>,
 }
 
-pub struct DeltaHedge<'a> {
+pub struct CauchyDeltaHedge<'a> {
     // data feeder
     stream: PairMarketStream<'a>,
     under_terminal: f64,
@@ -33,7 +33,7 @@ pub struct DeltaHedge<'a> {
     min_tte_hedge: f64, 
 }
 
-impl<'a> DeltaHedge<'a> {
+impl<'a> CauchyDeltaHedge<'a> {
     pub fn new(
         stream: PairMarketStream<'a>,
         max_under_pos: f64,
@@ -103,13 +103,13 @@ impl<'a> DeltaHedge<'a> {
         let deriv_mp = (kl_record.bid + kl_record.bid) as f64 / 200.0;
         let under_mp = cb_record.price;
         let tte = kl_record.tte;
-        let iv = gbm::iv(deriv_mp, under_mp, self.strike, 0.0, tte)?;
+        let iv = cauchy::iv(deriv_mp, under_mp, self.strike, tte)?;
 
         Some(GreekExp {
-            delta: gbm::delta(under_mp, self.stream.deriv_data.strike, iv, 0.0, tte),
-            gamma: gbm::gamma(under_mp, self.stream.deriv_data.strike, iv, 0.0, tte),
-            vega: gbm::vega(under_mp, self.stream.deriv_data.strike, iv, 0.0, tte),
-            theta: gbm::theta(under_mp, self.stream.deriv_data.strike, iv, 0.0, tte),
+            delta: cauchy::delta(under_mp, self.stream.deriv_data.strike, iv, tte),
+            gamma: cauchy::gamma(under_mp, self.stream.deriv_data.strike, iv, tte),
+            vega: cauchy::vega(under_mp, self.stream.deriv_data.strike, iv, tte),
+            theta: cauchy::theta(under_mp, self.stream.deriv_data.strike, iv, tte),
         })
     }
 

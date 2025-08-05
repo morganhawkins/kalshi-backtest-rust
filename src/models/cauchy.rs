@@ -1,4 +1,3 @@
-use statrs::function::erf::{erf, erf_inv};
 use std::f64::consts::PI;
 
 // cdf of cauchy distribution, no option for non-central

@@ -17,7 +17,7 @@ struct GreekExp {
     theta: Option<f64>,
 }
 
-pub struct DeltaHedge<'a> {
+pub struct GBMDeltaHedge<'a> {
     // data feeder
     stream: PairMarketStream<'a>,
     under_terminal: f64,
@@ -33,7 +33,7 @@ pub struct DeltaHedge<'a> {
     min_tte_hedge: f64, 
 }
 
-impl<'a> DeltaHedge<'a> {
+impl<'a> GBMDeltaHedge<'a> {
     pub fn new(
         stream: PairMarketStream<'a>,
         max_under_pos: f64,
