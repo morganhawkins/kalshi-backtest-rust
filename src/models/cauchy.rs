@@ -1,23 +1,22 @@
 use statrs::function::erf::{erf, erf_inv};
 use std::f64::consts::PI;
 
+// cdf of cauchy distribution, no option for non-central
 fn cauch_cdf(x: f64, gamma: f64) -> f64{
     (f64::atan(x/gamma)/PI) + 0.5
 }
 
+// pdf of cauchy distribution, no option for non-central
 fn cauch_pdf(x: f64, gamma: f64) -> f64 {
     let denom = ((x/gamma).powi(2) + 1.0) * gamma * PI;
     denom.recip()
 }
 
 pub fn value(u_price: f64, strike: f64, gamma:f64, tte: f64) -> Option<f64> {
-    if tte < 0.0 {
-        return None;
-    };
-
     let inner = f64::ln(strike/u_price) / (tte*gamma);
     let value_ = 1.0 - cauch_cdf(inner, gamma);
     
+    // check for nan
     if value_.is_finite(){
         Some(value_)
     } else {

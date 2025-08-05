@@ -6,7 +6,7 @@ use serde_json;
 
 use backtest::read_data::{read_kalshi::read_kalshi, read_underlying::read_coinbase};
 use backtest::strats::data_types::TestResult;
-use backtest::strats::delta_hedge::DeltaHedge;
+use backtest::strats::gbm_delta_hedge::DeltaHedge;
 use backtest::stream_data::market_stream::PairMarketStream;
 
 fn main() {
