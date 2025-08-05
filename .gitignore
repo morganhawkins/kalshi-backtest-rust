@@ -1,6 +1,7 @@
 /target
 data
 .DS_Store
+*.DS_Store
 results
 .venv
 
