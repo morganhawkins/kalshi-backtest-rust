@@ -19,7 +19,7 @@ fn main() {
     let serialized_data = serde_json::to_string(&results).expect("Failed to serialize data");
 
     let mut file =
-        fs::File::create("/Users/morganhawkins/Projects/current/backtest/results/delta_hedge_underlying/cauchy/cauchy_delta_hedged_buy.json")
+        fs::File::create("./results/delta_hedge_underlying/cauchy/cauchy_delta_hedged_buy.json")
             .expect("failed to create file to write to");
 
     file.write_all(serialized_data.as_bytes())
@@ -53,7 +53,7 @@ fn generate_dh_pair_test_cauch(
 }
 
 fn test_pair_streams(test_fn: impl Fn(PairMarketStream) -> TestResult) -> Vec<TestResult> {
-    let root = Path::new("/Users/morganhawkins/Projects/current/backtest/data/kalshi_step/btc/");
+    let root = Path::new("./data/kalshi_step/btc/");
 
     // initializing data to be rewritten on iter
     let mut data_files: fs::ReadDir;
@@ -82,7 +82,7 @@ fn test_pair_streams(test_fn: impl Fn(PairMarketStream) -> TestResult) -> Vec<Te
 
     // reading underlying data
     let underlying_data_path =
-        "/Users/morganhawkins/Projects/current/backtest/data/underlying/btc.json";
+        "./data/underlying/btc.json";
     let cb_records = read_coinbase(underlying_data_path).unwrap();
     let mut test_results = Vec::new();
     for contract_data in deriv_data {
