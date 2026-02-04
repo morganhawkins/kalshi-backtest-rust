@@ -1,7 +1,63 @@
 use statrs::function::erf::{erf, erf_inv};
 use std::f64::consts::PI;
 
-pub fn value(u_price: f64, strike: f64, sigma: f64, mu: f64, tte: f64) -> Option<f64> {
+use super::model::Model;
+
+pub struct GbmInput {
+    pub u_price: f64,
+    pub strike: f64,
+    pub sigma: f64,
+    pub mu: f64,
+    pub tte: f64,
+    pub price: Option<f64>, // market price, needed for iv calculation
+}
+
+pub struct Gbm;
+
+impl Model for Gbm {
+    type ModelInput = GbmInput;
+
+    /// Computes the theoretical value using the log-normal distribution CDF.
+    /// Returns the probability that the underlying exceeds the strike at expiration
+    /// under geometric Brownian motion dynamics.
+    fn value(params: &Self::ModelInput) -> Option<f64> {
+        value(params.u_price, params.strike, params.sigma, params.mu, params.tte)
+    }
+
+    /// Computes implied volatility (sigma) from market price.
+    /// Uses closed-form inversion via the inverse error function.
+    /// Returns `None` if price equals 0.5 (no unique solution) or result is negative.
+    fn iv(params: &Self::ModelInput) -> Option<f64> {
+        let price = params.price?;
+        iv(price, params.u_price, params.strike, params.mu, params.tte)
+    }
+
+    /// Computes delta as the derivative of value with respect to underlying price.
+    /// Uses the log-normal PDF in the chain rule calculation.
+    fn delta(params: &Self::ModelInput) -> Option<f64> {
+        delta(params.u_price, params.strike, params.sigma, params.mu, params.tte)
+    }
+
+    /// Computes vega as the derivative of value with respect to sigma.
+    /// Measures sensitivity to changes in volatility.
+    fn vega(params: &Self::ModelInput) -> Option<f64> {
+        vega(params.u_price, params.strike, params.sigma, params.mu, params.tte)
+    }
+
+    /// Computes theta as the derivative of value with respect to time.
+    /// Represents time decay of the option value.
+    fn theta(params: &Self::ModelInput) -> Option<f64> {
+        theta(params.u_price, params.strike, params.sigma, params.mu, params.tte)
+    }
+
+    /// Computes gamma as the second derivative of value with respect to underlying price.
+    /// Measures the rate of change of delta.
+    fn gamma(params: &Self::ModelInput) -> Option<f64> {
+        gamma(params.u_price, params.strike, params.sigma, params.mu, params.tte)
+    }
+}
+
+pub(crate) fn value(u_price: f64, strike: f64, sigma: f64, mu: f64, tte: f64) -> Option<f64> {
     if tte < 0.0 {
         return None;
     };
@@ -18,7 +74,7 @@ pub fn value(u_price: f64, strike: f64, sigma: f64, mu: f64, tte: f64) -> Option
     }
 }
 
-pub fn iv(price: f64, u_price: f64, strike: f64, mu: f64, tte: f64) -> Option<f64> {
+pub(crate) fn iv(price: f64, u_price: f64, strike: f64, mu: f64, tte: f64) -> Option<f64> {
     // no solution to iv if contract market price is .5
     if price == 0.5 {
         return None;
@@ -35,7 +91,7 @@ pub fn iv(price: f64, u_price: f64, strike: f64, mu: f64, tte: f64) -> Option<f6
     }
 }
 
-pub fn delta(u_price: f64, strike: f64, sigma: f64, mu: f64, tte: f64) -> Option<f64> {
+pub(crate) fn delta(u_price: f64, strike: f64, sigma: f64, mu: f64, tte: f64) -> Option<f64> {
     let deviations_to_strike =
         (f64::ln(strike) - f64::ln(u_price) - (tte * mu)) / (f64::sqrt(2.0 * tte) * sigma);
     let denominator = u_price * sigma * f64::sqrt(2.0 * tte * PI);
@@ -48,7 +104,7 @@ pub fn delta(u_price: f64, strike: f64, sigma: f64, mu: f64, tte: f64) -> Option
     }
 }
 
-pub fn vega(u_price: f64, strike: f64, sigma: f64, mu: f64, tte: f64) -> Option<f64> {
+pub(crate) fn vega(u_price: f64, strike: f64, sigma: f64, mu: f64, tte: f64) -> Option<f64> {
     let expected_units_to_strike = f64::ln(strike) - f64::ln(u_price) - (tte * mu);
     let formula_lhs = f64::exp(-(expected_units_to_strike.powi(2)) / (2.0 * tte * (sigma.powi(2))));
     let vega_ =
@@ -61,7 +117,7 @@ pub fn vega(u_price: f64, strike: f64, sigma: f64, mu: f64, tte: f64) -> Option<
     }
 }
 
-pub fn theta(u_price: f64, strike: f64, sigma: f64, mu: f64, tte: f64) -> Option<f64> {
+pub(crate) fn theta(u_price: f64, strike: f64, sigma: f64, mu: f64, tte: f64) -> Option<f64> {
     let formula_lhs = (f64::ln(u_price) - f64::ln(strike) - (tte * mu))
         / (sigma * f64::sqrt(8.0 * PI * tte.powi(3)));
     let theta_ = formula_lhs
@@ -77,7 +133,7 @@ pub fn theta(u_price: f64, strike: f64, sigma: f64, mu: f64, tte: f64) -> Option
     }
 }
 
-pub fn gamma(u_price: f64, strike: f64, sigma: f64, mu: f64, tte: f64) -> Option<f64> {
+pub(crate) fn gamma(u_price: f64, strike: f64, sigma: f64, mu: f64, tte: f64) -> Option<f64> {
     let formula_lhs = f64::exp(
         -(f64::ln(strike) - f64::ln(u_price) - (tte * mu)).powi(2) / (2.0 * tte * sigma.powi(2)),
     );
