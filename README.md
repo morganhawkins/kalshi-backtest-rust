@@ -26,5 +26,5 @@ Event contracts on [Kalshi](https://kalshi.com) are volatile and less liquid tha
 - Rebalance hedge every 60 seconds based on model delta
 - Compare terminal portfolio value of hedged vs. unhedged positions
 
-![1DTE return distribution: hedged vs. unhedged](results/delta_hedge_underlying/delta_hedge_gbm_vs_cauchy.png)
+![1DTE return distribution: Cauchy Process Delta Estimate](results/delta_hedge_underlying/cauchy/delta_hedge_cauchy.png)
 
