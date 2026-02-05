@@ -98,3 +98,137 @@ impl<'a, T: Timer> TickMultiStream<'a, T> {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::stream_data::tick_stream::TickStream;
+    use crate::stream_data::timers::DeltaTimer;
+
+    struct MockTickA {
+        ts: u64,
+        _value: i32,
+    }
+
+    impl MockTickA {
+        fn new(ts: u64, _value: i32) -> Self {
+            MockTickA { ts, _value }
+        }
+    }
+
+    impl Tick for MockTickA {
+        fn ts(&self) -> u64 {
+            self.ts
+        }
+    }
+
+    struct MockTickB {
+        ts: u64,
+        _label: &'static str,
+    }
+
+    impl MockTickB {
+        fn new(ts: u64, _label: &'static str) -> Self {
+            MockTickB { ts, _label }
+        }
+    }
+
+    impl Tick for MockTickB {
+        fn ts(&self) -> u64 {
+            self.ts
+        }
+    }
+
+    #[test]
+    fn test_heterogeneous_streams() {
+        let timer = Rc::new(DeltaTimer::new(5, 20, 5));
+
+        let data_a = vec![
+            MockTickA::new(1, 100),
+            MockTickA::new(5, 200),
+            MockTickA::new(10, 300),
+        ];
+        let data_b = vec![
+            MockTickB::new(2, "first"),
+            MockTickB::new(4, "second"),
+            MockTickB::new(8, "third"),
+        ];
+
+        let stream_a = TickStream::new(Rc::clone(&timer), &data_a);
+        let stream_b = TickStream::new(Rc::clone(&timer), &data_b);
+
+        let mut multi = TickMultiStream::new(Rc::clone(&timer));
+        multi.add_stream(Box::new(stream_a));
+        multi.add_stream(Box::new(stream_b));
+
+        // At time 5
+        let results = multi.iter_all_new().unwrap();
+        assert_eq!(results.len(), 2);
+        assert_eq!(results[0].1.len(), 2); // stream_a: ts 1, 5
+        assert_eq!(results[1].1.len(), 2); // stream_b: ts 2, 4
+
+        // Cycle to time 10
+        multi.cycle();
+        let results = multi.iter_all_new().unwrap();
+        assert_eq!(results[0].1.len(), 1); // stream_a: ts 10
+        assert_eq!(results[1].1.len(), 1); // stream_b: ts 8
+    }
+
+    #[test]
+    fn test_shared_timer_across_multi_streams() {
+        let timer = Rc::new(DeltaTimer::new(5, 20, 5));
+
+        let data1 = vec![MockTickA::new(1, 1)];
+        let data2 = vec![MockTickA::new(2, 2)];
+
+        let stream1 = TickStream::new(Rc::clone(&timer), &data1);
+        let stream2 = TickStream::new(Rc::clone(&timer), &data2);
+
+        let mut multi1 = TickMultiStream::new(Rc::clone(&timer));
+        multi1.add_stream(Box::new(stream1));
+
+        let mut multi2 = TickMultiStream::new(Rc::clone(&timer));
+        multi2.add_stream(Box::new(stream2));
+
+        assert_eq!(multi1.get_time(), Some(5));
+        assert_eq!(multi2.get_time(), Some(5));
+
+        // Cycle via one multi stream
+        multi1.cycle();
+
+        // Both see updated time
+        assert_eq!(multi1.get_time(), Some(10));
+        assert_eq!(multi2.get_time(), Some(10));
+    }
+
+    #[test]
+    fn test_iter_new_for_stream() {
+        let timer = Rc::new(DeltaTimer::new(5, 20, 5));
+        let data = vec![MockTickA::new(1, 1), MockTickA::new(5, 2)];
+
+        let stream = TickStream::new(Rc::clone(&timer), &data);
+
+        let mut multi = TickMultiStream::new(timer);
+        multi.add_stream(Box::new(stream));
+
+        let items = multi.iter_new_for_stream(0).unwrap();
+        assert_eq!(items.len(), 2);
+
+        // Out of bounds returns None
+        assert!(multi.iter_new_for_stream(1).is_none());
+    }
+
+    #[test]
+    fn test_is_exhausted() {
+        let timer = Rc::new(DeltaTimer::new(0, 10, 5));
+        let data = vec![MockTickA::new(0, 1)];
+
+        let stream = TickStream::new(Rc::clone(&timer), &data);
+
+        let mut multi = TickMultiStream::new(timer);
+        multi.add_stream(Box::new(stream));
+
+        assert!(!multi.all_exhausted());
+        let _ = multi.iter_all_new();
+        assert!(multi.all_exhausted());
+    }
+}
